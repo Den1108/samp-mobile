@@ -1,40 +1,28 @@
 package com.flyt.mobile
 
 import android.os.Bundle
+import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.io.File
-import java.io.FileWriter
-import java.util.Date
 
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main) // Подключаем наш XML
 
-    val tv = TextView(this)
-    setContentView(tv)
+        val statusText = findViewById<TextView>(R.id.statusText)
+        val playButton = findViewById<Button>(R.id.playButton)
 
-    // Записываем что-нибудь в лог
-    val logFile = File(getExternalFilesDir(null), "samp_debug.txt")
-    try {
-        FileWriter(logFile, true).use { it.append("Test log entry: ${Date()}\n") }
-        
-        // ЧИТАЕМ лог обратно и выводим на экран
-        val logContent = logFile.readText()
-        tv.text = "Файл создан: ${logFile.absolutePath}\n\nЛог:\n$logContent"
-    } catch (e: Exception) {
-        tv.text = "Ошибка: ${e.message}"
-    }
-}
+        // Вызываем функцию из C++
+        System.loadLibrary("samp-mobile")
+        statusText.text = stringFromJNI()
 
-    private fun logToFile(message: String) {
-        try {
-            val logFile = File(getExternalFilesDir(null), "samp_debug.txt")
-            FileWriter(logFile, true).use {
-                it.append("${Date()}: $message\n")
-            }
-        } catch (e: Exception) { }
+        playButton.setOnClickListener {
+            Toast.makeText(this, "Запуск игры...", Toast.LENGTH_SHORT).show()
+            // Здесь позже будет вызов C++ функции для старта движка
+        }
     }
 
     external fun stringFromJNI(): String
