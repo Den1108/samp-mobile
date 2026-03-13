@@ -1,5 +1,6 @@
 package com.flyt.mobile
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
@@ -10,26 +11,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main) // Подключаем наш XML
+        setContentView(R.layout.activity_main)
+
+        System.loadLibrary("samp-mobile")
 
         val statusText = findViewById<TextView>(R.id.statusText)
         val playButton = findViewById<Button>(R.id.playButton)
+        val settingsButton = findViewById<Button>(R.id.settingsButton)
 
-        // Вызываем функцию из C++
-        System.loadLibrary("samp-mobile")
-        statusText.text = stringFromJNI()
-
+        // Кнопка ИГРАТЬ: достаем ник и вызываем C++
         playButton.setOnClickListener {
-            Toast.makeText(this, "Запуск игры...", Toast.LENGTH_SHORT).show()
-            // Здесь позже будет вызов C++ функции для старта движка
+            val prefs = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
+            val nickname = prefs.getString("nickname", "Player") ?: "Player"
+            
+            // Вызываем новую функцию, передавая туда ник
+            val result = launchGame(nickname)
+            Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
         }
 
-        // Внутри onCreate
-        val settingsButton = findViewById<Button>(R.id.settingsButton)
         settingsButton.setOnClickListener {
-            startActivity(android.content.Intent(this, SettingsActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
-    external fun stringFromJNI(): String
+    // Раньше была stringFromJNI, теперь заменяем на launchGame
+    external fun launchGame(nickname: String): String
 }
