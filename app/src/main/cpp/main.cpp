@@ -1,20 +1,24 @@
-#include <jni.h>
-#include <string>
+#include <sys/stat.h> // Для проверки файлов
+#include <unistd.h>
+
+// Функция для проверки, существует ли файл
+bool fileExists(const std::string& path) {
+    struct stat buffer;
+    return (stat(path.c_str(), &buffer) == 0);
+}
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_flyt_mobile_MainActivity_launchGame( // Имя функции теперь включает launchGame
-        JNIEnv* env,
-        jobject /* this */,
-        jstring nickname) { // Добавили параметр nickname
+Java_com_flyt_mobile_MainActivity_launchGame(
+        JNIEnv* env, jobject /* this */, jstring nickname) {
     
-    // Преобразуем Java-строку в C++ строку
-    const char *nativeNickname = env->GetStringUTFChars(nickname, 0);
+    // Путь к файлу, который мы ищем (например, gta_sa.set)
+    std::string cachePath = "/sdcard/Android/data/com.flyt.mobile/files/gta_sa.set";
     
-    std::string message = "Запуск игры с ником: ";
-    message += nativeNickname;
-    
-    // Освобождаем память
-    env->ReleaseStringUTFChars(nickname, nativeNickname);
-    
-    return env->NewStringUTF(message.c_str());
+    if (fileExists(cachePath)) {
+        // Кэш найден
+        return env->NewStringUTF("Кэш найден! Запуск...");
+    } else {
+        // Кэш не найден
+        return env->NewStringUTF("Ошибка: файлы игры не найдены!");
+    }
 }
