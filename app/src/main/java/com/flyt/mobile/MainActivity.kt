@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Загрузка кэша Flyt Mobile")
             .setDescription("Скачивание файлов игры...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "game_cache.zip")
+            .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "cache.zip")
 
         val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         manager.enqueue(request)
@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             Toast.makeText(context, "Загрузка завершена! Распаковываю...", Toast.LENGTH_LONG).show()
         
-            val zipFile = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "game_cache.zip")
+            val zipFile = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "cache.zip")
             val targetDir = File(getExternalFilesDir(null), "") // Папка, куда распаковать
         
             // Запускаем распаковку в фоновом потоке, чтобы не "зависло" приложение
