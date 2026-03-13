@@ -10,25 +10,21 @@ import java.util.Date
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Записываем лог запуска
-        logToFile("App started")
-
-        try {
-            val tv = TextView(this)
-            tv.text = "Loading..."
-            setContentView(tv)
-            
-            // Пробуем загрузить библиотеку
-            System.loadLibrary("samp-mobile")
-            tv.text = stringFromJNI()
-            
-        } catch (e: Exception) {
-            logToFile("CRASH: ${e.message}")
-            finish() // Закрываем при ошибке
-        }
+    super.onCreate(savedInstanceState)
+    
+    val tv = TextView(this)
+    tv.textSize = 20f
+    setContentView(tv)
+    
+    try {
+        System.loadLibrary("samp-mobile")
+        tv.text = stringFromJNI()
+    } catch (e: Throwable) {
+        // Выводим ошибку прямо на экран, чтобы ты её увидел!
+        tv.text = "ERROR: ${e.javaClass.simpleName}\n${e.message}"
+        logToFile("CRASH: ${e.message}")
     }
+}
 
     private fun logToFile(message: String) {
         try {

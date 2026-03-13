@@ -2,9 +2,8 @@
 #include <string>
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_launcher_MainActivity_stringFromJNI(
+Java_org_example_MainActivity_stringFromJNI( // Имя пакета org.example и класса MainActivity
         JNIEnv* env,
         jobject /* this */) {
-    std::string hello = "SAMP Mobile C++ Library Loaded!";
-    return env->NewStringUTF(hello.c_str());
+    return env->NewStringUTF("SAMP Mobile Library Loaded Successfully!");
 }
