@@ -4,16 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#121212"
+    android:gravity="center"
     android:padding="20dp">
 
     <TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Flyt Mobile Ready"
-        android:textColor="#E0E0E0"
-        android:textSize="18sp"
-        android:layout_gravity="center_horizontal" />
+        android:text="Flyt Mobile"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp" />
 
     <Button
         android:id="@+id/playButton"
@@ -21,7 +21,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
         android:text="ИГРАТЬ"
-        android:backgroundTint="#333333"
-        android:textColor="#FFFFFF" />
+        android:backgroundTint="#333333" />
 
+    <Button
+        android:id="@+id/settingsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="НАСТРОЙКИ"
+        android:backgroundTint="#222222" />
 </LinearLayout>

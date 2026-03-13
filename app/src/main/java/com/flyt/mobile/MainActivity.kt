@@ -23,6 +23,12 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Запуск игры...", Toast.LENGTH_SHORT).show()
             // Здесь позже будет вызов C++ функции для старта движка
         }
+
+        // Внутри onCreate
+        val settingsButton = findViewById<Button>(R.id.settingsButton)
+        settingsButton.setOnClickListener {
+            startActivity(android.content.Intent(this, SettingsActivity::class.java))
+        }
     }
 
     external fun stringFromJNI(): String
