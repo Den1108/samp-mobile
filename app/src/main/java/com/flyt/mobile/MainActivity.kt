@@ -1,4 +1,4 @@
-package org.example
+package com.flyt.mobile
 
 import android.os.Bundle
 import android.widget.TextView

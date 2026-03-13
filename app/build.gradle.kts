@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "org.example"
+    namespace = "com.flyt.mobile"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "org.example.launcher"
+        applicationId = "com.flyt.mobile"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

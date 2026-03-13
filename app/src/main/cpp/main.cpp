@@ -2,8 +2,8 @@
 #include <string>
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_org_example_MainActivity_stringFromJNI( // Имя пакета org.example и класса MainActivity
+Java_com_flyt_mobile_MainActivity_stringFromJNI(
         JNIEnv* env,
         jobject /* this */) {
-    return env->NewStringUTF("SAMP Mobile Library Loaded Successfully!");
+    return env->NewStringUTF("Flyt Mobile Library Loaded!");
 }
