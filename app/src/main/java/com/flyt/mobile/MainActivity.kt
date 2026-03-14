@@ -104,20 +104,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun unzip(zipFile: File, targetDirectory: File) {
+        logToFile("Начинаю распаковку архива: ${zipFile.absolutePath}")
+        
         ZipInputStream(FileInputStream(zipFile)).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
                 val newFile = File(targetDirectory, entry.name)
+                
+                // Логируем каждый файл, чтобы видеть, на каком этапе обрыв
+                logToFile("Распаковка файла: ${entry.name}")
+                
                 if (entry.isDirectory) {
                     newFile.mkdirs()
                 } else {
                     newFile.parentFile?.mkdirs()
-                    FileOutputStream(newFile).use { fos -> zis.copyTo(fos) }
+                    FileOutputStream(newFile).use { fos -> 
+                        zis.copyTo(fos) 
+                    }
                 }
                 zis.closeEntry()
                 entry = zis.nextEntry
             }
         }
+        logToFile("Цикл распаковки завершен успешно")
     }
 
     fun logToFile(message: String) {
