@@ -9,17 +9,15 @@ bool fileExists(const std::string& path) {
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_flyt_mobile_MainActivity_launchGame(
-        JNIEnv* env,
-        jobject /* this */,
-        jstring nickname) {
+Java_com_flyt_mobile_MainActivity_launchGame(JNIEnv* env, jobject /* this */, jstring nickname) {
+    // Используем путь, который гарантированно доступен приложению
+    const char* path = "/sdcard/Android/data/com.flyt.mobile/files/gta_sa.set";
     
-    // Путь к файлу кэша
-    std::string cachePath = "/sdcard/Android/data/com.flyt.mobile/files/gta_sa.set";
-    
-    if (fileExists(cachePath)) {
-        return env->NewStringUTF("Кэш найден! Начинаю загрузку...");
+    struct stat buffer;
+    if (stat(path, &buffer) == 0) {
+        return env->NewStringUTF("Кэш найден! Запуск...");
     } else {
-        return env->NewStringUTF("Ошибка: файлы игры не найдены в /data/com.flyt.mobile/files/");
+        // Возвращаем именно это сообщение, чтобы Kotlin поймал "Ошибка"
+        return env->NewStringUTF("Ошибка: кэш не найден");
     }
 }

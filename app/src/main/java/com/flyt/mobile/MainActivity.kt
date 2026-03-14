@@ -16,6 +16,9 @@ import java.io.FileOutputStream
 import java.io.File
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -36,10 +39,11 @@ class MainActivity : AppCompatActivity() {
     
             // Вызываем проверку (C++ метод)
             val result = launchGame(nickname)
+            logToFile("Проверка кэша: $result")
     
-            if (result.contains("Ошибка")) { // Если C++ вернул ошибку, качаем
+            if (result.contains("Ошибка")) {
                 Toast.makeText(this, "Кэш не найден, начинаю скачивание...", Toast.LENGTH_LONG).show()
-                // Вставь сюда свою прямую ссылку на .zip архив с кэшем
+                logToFile("Кэш не найден, инициирую загрузку")
                 startDownload("https://samp-cache.netlify.app/cache.zip") 
             } else {
                 Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
@@ -100,9 +104,15 @@ class MainActivity : AppCompatActivity() {
         
             // Запускаем распаковку в фоновом потоке, чтобы не "зависло" приложение
             Thread {
-                unzip(zipFile, targetDir)
-                runOnUiThread {
-                    Toast.makeText(context, "Распаковка завершена! Можно играть.", Toast.LENGTH_SHORT).show()
+                try {
+                    logToFile("Начало распаковки...") // <-- Логируем старт распаковки
+                    unzip(zipFile, targetDir)
+                    logToFile("Распаковка успешно завершена") // <-- Логируем успех
+                    runOnUiThread { 
+                        Toast.makeText(context, "Распаковка завершена!", Toast.LENGTH_SHORT).show() 
+                    }
+                } catch (e: Exception) {
+                    logToFile("КРИТИЧЕСКАЯ ОШИБКА при распаковке: ${e.message}") // <-- Логируем ошибки
                 }
             }.start()
         }
@@ -111,5 +121,15 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(onDownloadComplete)
+    }
+
+    fun logToFile(message: String) {
+        try {
+            val logFile = File(getExternalFilesDir(null), "flyt_log.txt")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            logFile.appendText("[$timestamp] $message\n")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
