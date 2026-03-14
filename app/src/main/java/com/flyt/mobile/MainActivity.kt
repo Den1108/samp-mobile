@@ -14,27 +14,20 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.zip.ZipInputStream
 
 class MainActivity : AppCompatActivity() {
 
-    private var myDownloadId: Long = -1
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         System.loadLibrary("samp-mobile")
-
-        // 1. Проверка разрешений при старте
         checkPermissions()
 
-        val statusText = findViewById<TextView>(R.id.statusText)
         val playButton = findViewById<Button>(R.id.playButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
 
@@ -44,13 +37,17 @@ class MainActivity : AppCompatActivity() {
             
             val result = launchGame(nickname)
             if (result.contains("Ошибка")) {
+                logToFile("Кэш не найден, запуск скачивания...")
                 startDownload("https://samp-cache.netlify.app/cache.zip")
             } else {
                 Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Регистрация Receiver
+        settingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(onDownloadComplete, filter, RECEIVER_NOT_EXPORTED)
@@ -72,70 +69,81 @@ class MainActivity : AppCompatActivity() {
 
     fun startDownload(url: String) {
         val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle("Загрузка кэша")
-            .setDescription("Скачивание...")
+            .setTitle("Загрузка кэша Flyt Mobile")
+            .setDescription("Скачивание файлов игры...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "cache.zip")
 
         val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        myDownloadId = manager.enqueue(request)
-        Toast.makeText(this, "Загрузка началась...", Toast.LENGTH_SHORT).show()
+        val id = manager.enqueue(request)
+        
+        // Сохраняем ID, чтобы пережить перезапуск Activity
+        getSharedPreferences("FlytPrefs", MODE_PRIVATE).edit().putLong("myDownloadId", id).apply()
+        logToFile("Запрос на скачивание отправлен. ID: $id")
     }
 
     private val onDownloadComplete = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            if (id != myDownloadId) return // Игнорируем чужие загрузки
+            val savedId = getSharedPreferences("FlytPrefs", MODE_PRIVATE).getLong("myDownloadId", -1)
+            
+            logToFile("Получен сигнал о завершении загрузки: $id. Ожидался: $savedId")
 
-            val zipFile = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "cache.zip")
-            val targetDir = getExternalFilesDir(null)!!
+            if (id == savedId) {
+                val zipFile = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "cache.zip")
+                val targetDir = getExternalFilesDir(null)!!
 
-            Thread {
-                try {
-                    logToFile("Старт распаковки")
-                    unzip(zipFile, targetDir)
-                    zipFile.delete() // Удаляем зип после успеха
-                    runOnUiThread { Toast.makeText(context, "Успешно!", Toast.LENGTH_SHORT).show() }
-                } catch (e: Exception) {
-                    logToFile("Ошибка распаковки: ${e.message}")
-                }
-            }.start()
+                Thread {
+                    try {
+                        logToFile("Начало распаковки...")
+                        unzip(zipFile, targetDir)
+                        logToFile("Распаковка завершена успешно")
+                        zipFile.delete()
+                        runOnUiThread { Toast.makeText(context, "Распаковка завершена!", Toast.LENGTH_SHORT).show() }
+                    } catch (e: Exception) {
+                        logToFile("КРИТИЧЕСКАЯ ОШИБКА: ${e.stackTraceToString()}")
+                    }
+                }.start()
+            }
         }
     }
 
     fun unzip(zipFile: File, targetDirectory: File) {
-        logToFile("Начинаю распаковку архива: ${zipFile.absolutePath}")
+        if (!zipFile.exists()) {
+            logToFile("Ошибка: Файл zip не найден по пути ${zipFile.absolutePath}")
+            return
+        }
         
         ZipInputStream(FileInputStream(zipFile)).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
                 val newFile = File(targetDirectory, entry.name)
-                
-                // Логируем каждый файл, чтобы видеть, на каком этапе обрыв
-                logToFile("Распаковка файла: ${entry.name}")
+                logToFile("Распаковка: ${entry.name}")
                 
                 if (entry.isDirectory) {
                     newFile.mkdirs()
                 } else {
                     newFile.parentFile?.mkdirs()
-                    FileOutputStream(newFile).use { fos -> 
-                        zis.copyTo(fos) 
-                    }
+                    FileOutputStream(newFile).use { fos -> zis.copyTo(fos) }
                 }
                 zis.closeEntry()
                 entry = zis.nextEntry
             }
         }
-        logToFile("Цикл распаковки завершен успешно")
     }
 
     fun logToFile(message: String) {
-        val logFile = File(getExternalFilesDir(null), "flyt_log.txt")
-        logFile.appendText("[${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}] $message\n")
+        try {
+            val logFile = File(getExternalFilesDir(null), "flyt_log.txt")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            logFile.appendText("[$timestamp] $message\n")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(onDownloadComplete)
+        try { unregisterReceiver(onDownloadComplete) } catch (e: Exception) {}
     }
 }
