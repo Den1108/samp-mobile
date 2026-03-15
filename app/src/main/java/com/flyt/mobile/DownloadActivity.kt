@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.work.*
+import android.widget.Toast
 
 class DownloadActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,12 +18,12 @@ class DownloadActivity : AppCompatActivity() {
         val btnCancel = findViewById<Button>(R.id.btnCancel)
 
         val workManager = WorkManager.getInstance(this)
-        workManager.getWorkInfosForUniqueWork("GAME_DOWNLOAD").get().let { infos ->
-            if (infos.any { it.state == WorkInfo.State.RUNNING }) {
-                Toast.makeText(this, "Загрузка уже идет!", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-        }
+        //workManager.getWorkInfosForUniqueWork("GAME_DOWNLOAD").get().let { infos ->
+            //if (infos.any { it.state == WorkInfo.State.RUNNING }) {
+                //Toast.makeText(this, "Загрузка уже идет!", Toast.LENGTH_SHORT).show()
+                //return@setOnClickListener
+            //}
+        //}
 
         btnInstall.setOnClickListener {
             btnInstall.isEnabled = false
