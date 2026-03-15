@@ -43,7 +43,11 @@ class MainActivity : AppCompatActivity() {
                 .getString("nickname", "Player") ?: "Player"
 
             logToFile("Попытка запуска игры для: $nickname")
-            val result = launchGame(nickname)
+
+            // В MainActivity.kt
+            val cacheDir = getExternalFilesDir(null)?.absolutePath ?: ""
+            val gtaSaSetPath = "$cacheDir/files/gta_sa.set"
+            val result = launchGame(nickname, gtaSaSetPath)
 
             if (result.contains("Ошибка") || result.contains("не найден")) {
                 logToFile("Кэш не прошел проверку. Запуск системы обновления...")
@@ -99,7 +103,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    external fun launchGame(nickname: String): String
+    external fun launchGame(nickname: String, path: String): String
 
     fun logToFile(message: String) {
         try {
