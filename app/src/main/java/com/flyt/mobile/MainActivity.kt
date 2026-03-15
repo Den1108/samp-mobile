@@ -1,23 +1,24 @@
 package com.flyt.mobile
 
 import android.Manifest
-import android.app.DownloadManager
-import android.content.*
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.io.*
+import androidx.work.*
+import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.zip.ZipInputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,25 +35,21 @@ class MainActivity : AppCompatActivity() {
         playButton.setOnClickListener {
             val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
                 .getString("nickname", "Player") ?: "Player"
-            
+
+            logToFile("Попытка запуска игры для: $nickname")
             val result = launchGame(nickname)
-            if (result.contains("Ошибка")) {
-                logToFile("Кэш не найден, запуск скачивания...")
-                startDownload("https://samp-cache.netlify.app/cache.zip")
+
+            if (result.contains("Ошибка") || result.contains("не найден")) {
+                logToFile("Кэш не прошел проверку. Запуск системы обновления...")
+                startGameUpdate()
             } else {
-                Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Запуск: $result", Toast.LENGTH_SHORT).show()
             }
         }
 
         settingsButton.setOnClickListener {
+            logToFile("Переход в настройки")
             startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
-        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(onDownloadComplete, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(onDownloadComplete, filter)
         }
     }
 
@@ -65,85 +62,106 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun startGameUpdate() {
+        val workManager = WorkManager.getInstance(this)
+        
+        // Создаем задачу на обновление
+        val updateRequest = OneTimeWorkRequestBuilder<UpdateWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .addTag("game_update")
+            .build()
+
+        workManager.enqueueUniqueWork("UPDATE_WORK", ExistingWorkPolicy.KEEP, updateRequest)
+        
+        Toast.makeText(this, "Проверка и загрузка файлов...", Toast.LENGTH_LONG).show()
+        
+        // Отслеживание прогресса (опционально)
+        workManager.getWorkInfoByIdLiveData(updateRequest.id).observe(this) { info ->
+            if (info?.state == WorkInfo.State.SUCCEEDED) {
+                Toast.makeText(this, "Обновление завершено!", Toast.LENGTH_SHORT).show()
+            } else if (info?.state == WorkInfo.State.FAILED) {
+                Toast.makeText(this, "Ошибка при загрузке. Проверьте лог.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     external fun launchGame(nickname: String): String
-
-    fun startDownload(url: String) {
-        val request = DownloadManager.Request(Uri.parse(url))
-            .setTitle("Загрузка кэша Flyt Mobile")
-            .setDescription("Скачивание файлов игры...")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "cache.zip")
-
-        val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val id = manager.enqueue(request)
-        
-        // Сохраняем ID, чтобы пережить перезапуск Activity
-        getSharedPreferences("FlytPrefs", MODE_PRIVATE).edit().putLong("myDownloadId", id).apply()
-        logToFile("Запрос на скачивание отправлен. ID: $id")
-    }
-
-    private val onDownloadComplete = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            val savedId = getSharedPreferences("FlytPrefs", MODE_PRIVATE).getLong("myDownloadId", -1)
-            
-            logToFile("Получен сигнал о завершении загрузки: $id. Ожидался: $savedId")
-
-            if (id == savedId) {
-                val zipFile = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "cache.zip")
-                val targetDir = getExternalFilesDir(null)!!
-
-                Thread {
-                    try {
-                        logToFile("Начало распаковки...")
-                        unzip(zipFile, targetDir)
-                        logToFile("Распаковка завершена успешно")
-                        zipFile.delete()
-                        runOnUiThread { Toast.makeText(context, "Распаковка завершена!", Toast.LENGTH_SHORT).show() }
-                    } catch (e: Exception) {
-                        logToFile("КРИТИЧЕСКАЯ ОШИБКА: ${e.stackTraceToString()}")
-                    }
-                }.start()
-            }
-        }
-    }
-
-    fun unzip(zipFile: File, targetDirectory: File) {
-        if (!zipFile.exists()) {
-            logToFile("Ошибка: Файл zip не найден по пути ${zipFile.absolutePath}")
-            return
-        }
-        
-        ZipInputStream(FileInputStream(zipFile)).use { zis ->
-            var entry = zis.nextEntry
-            while (entry != null) {
-                val newFile = File(targetDirectory, entry.name)
-                logToFile("Распаковка: ${entry.name}")
-                
-                if (entry.isDirectory) {
-                    newFile.mkdirs()
-                } else {
-                    newFile.parentFile?.mkdirs()
-                    FileOutputStream(newFile).use { fos -> zis.copyTo(fos) }
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
-        }
-    }
 
     fun logToFile(message: String) {
         try {
             val logFile = File(getExternalFilesDir(null), "flyt_log.txt")
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             logFile.appendText("[$timestamp] $message\n")
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+}
+
+/**
+ * Воркер, который делает всю тяжелую работу: качает JSON, парсит его и качает файлы
+ */
+class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+
+    private val jsonUrl = "https://raw.githubusercontent.com/Den1108/samp-mobile-cache/refs/heads/main/distribution.json"
+
+    override fun doWork(): Result {
+        log("Начало работы UpdateWorker")
+        
+        try {
+            // 1. Скачиваем distribution.json
+            val jsonContent = URL(jsonUrl).readText()
+            val root = JSONObject(jsonContent)
+            val cdnBase = root.getString("cdnCache") // "https://adorable-druid-2a5b25.netlify.app/"
+            val cacheArray = root.getJSONArray("cache")
+
+            log("JSON получен. Файлов к проверке: ${cacheArray.length()}")
+
+            // 2. Итерируемся по списку файлов
+            for (i in 0 until cacheArray.length()) {
+                val fileObj = cacheArray.getJSONObject(i)
+                val rawName = fileObj.getString("name") // "files\\data\\..."
+                
+                // Исправляем путь для Android (слэши)
+                val cleanPath = rawName.replace("\\", "/")
+                val fileUrl = cdnBase + cleanPath
+                val targetFile = File(applicationContext.getExternalFilesDir(null), cleanPath)
+
+                // 3. Создаем подпапки автоматически
+                targetFile.parentFile?.let {
+                    if (!it.exists()) {
+                        val created = it.mkdirs()
+                        if (created) log("Создана папка: ${it.absolutePath}")
+                    }
+                }
+
+                // 4. Скачивание файла (с защитой от сбоев)
+                downloadFile(fileUrl, targetFile)
+            }
+
+            log("Все файлы успешно обработаны")
+            return Result.success()
+
         } catch (e: Exception) {
-            e.printStackTrace()
+            log("КРИТИЧЕСКАЯ ОШИБКА ОБНОВЛЕНИЯ: ${e.stackTraceToString()}")
+            return Result.failure()
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        try { unregisterReceiver(onDownloadComplete) } catch (e: Exception) {}
+    private fun downloadFile(url: String, destination: File) {
+        // Можно добавить проверку: если файл существует и размер совпадает - не качать
+        // Но по вашему запросу "не упрощать" — скачиваем/перезаписываем
+        
+        log("Загрузка: $url")
+        URL(url).openStream().use { input ->
+            FileOutputStream(destination).use { output ->
+                input.copyTo(output)
+            }
+        }
+        log("Сохранен: ${destination.name}")
+    }
+
+    private fun log(message: String) {
+        val logFile = File(applicationContext.getExternalFilesDir(null), "flyt_log.txt")
+        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        logFile.appendText("[$timestamp] [Worker] $message\n")
     }
 }
