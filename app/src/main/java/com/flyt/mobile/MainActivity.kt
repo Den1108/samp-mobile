@@ -22,6 +22,9 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
+    // Объявляем переменную здесь, чтобы она была доступна во всем классе
+    private lateinit var statusText: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -29,8 +32,10 @@ class MainActivity : AppCompatActivity() {
         System.loadLibrary("samp-mobile")
         checkPermissions()
 
+        // Инициализируем UI
         val playButton = findViewById<Button>(R.id.playButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
+        statusText = findViewById<TextView>(R.id.statusText) // Теперь она инициализирована сразу
 
         playButton.setOnClickListener {
             val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
@@ -48,7 +53,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         settingsButton.setOnClickListener {
-            logToFile("Переход в настройки")
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
@@ -65,22 +69,31 @@ class MainActivity : AppCompatActivity() {
     private fun startGameUpdate() {
         val workManager = WorkManager.getInstance(this)
         
-        // Создаем задачу на обновление
         val updateRequest = OneTimeWorkRequestBuilder<UpdateWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .addTag("game_update")
             .build()
 
-        workManager.enqueueUniqueWork("UPDATE_WORK", ExistingWorkPolicy.KEEP, updateRequest)
+        // Используем REPLACE, чтобы если старое обновление зависло, началось новое чистое
+        workManager.enqueueUniqueWork("UPDATE_WORK", ExistingWorkPolicy.REPLACE, updateRequest)
         
-        Toast.makeText(this, "Проверка и загрузка файлов...", Toast.LENGTH_LONG).show()
-        
-        // Отслеживание прогресса (опционально)
         workManager.getWorkInfoByIdLiveData(updateRequest.id).observe(this) { info ->
-            if (info?.state == WorkInfo.State.SUCCEEDED) {
-                Toast.makeText(this, "Обновление завершено!", Toast.LENGTH_SHORT).show()
-            } else if (info?.state == WorkInfo.State.FAILED) {
-                Toast.makeText(this, "Ошибка при загрузке. Проверьте лог.", Toast.LENGTH_LONG).show()
+            if (info != null) {
+                val progress = info.progress.getString("progress_msg")
+                if (progress != null) {
+                    statusText.text = progress 
+                }
+
+                when (info.state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        statusText.text = "Все файлы проверены!"
+                        Toast.makeText(this, "Готово! Можно играть", Toast.LENGTH_SHORT).show()
+                    }
+                    WorkInfo.State.FAILED -> {
+                        statusText.text = "Ошибка загрузки. Попробуйте еще раз."
+                    }
+                    else -> {}
+                }
             }
         }
     }
@@ -104,64 +117,58 @@ class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context,
     private val jsonUrl = "https://raw.githubusercontent.com/Den1108/samp-mobile-cache/refs/heads/main/distribution.json"
 
     override fun doWork(): Result {
-        log("Начало работы UpdateWorker")
-        
         try {
-            // 1. Скачиваем distribution.json
+            log("Запуск проверки целостности файлов...")
+            
             val jsonContent = URL(jsonUrl).readText()
             val root = JSONObject(jsonContent)
-            val cdnBase = root.getString("cdnCache") // "https://adorable-druid-2a5b25.netlify.app/"
+            val cdnBase = root.getString("cdnCache")
             val cacheArray = root.getJSONArray("cache")
+            val totalFiles = cacheArray.length()
 
-            log("JSON получен. Файлов к проверке: ${cacheArray.length()}")
-
-            // 2. Итерируемся по списку файлов
-            for (i in 0 until cacheArray.length()) {
+            for (i in 0 until totalFiles) {
                 val fileObj = cacheArray.getJSONObject(i)
-                val rawName = fileObj.getString("name") // "files\\data\\..."
+                val rawName = fileObj.getString("name")
                 
-                // Исправляем путь для Android (слэши)
+                // Получаем ожидаемый размер файла (берем первый элемент массива bytes из вашего JSON)
+                val expectedSize = fileObj.getJSONArray("bytes").getLong(0)
+                
                 val cleanPath = rawName.replace("\\", "/")
                 val fileUrl = cdnBase + cleanPath
                 val targetFile = File(applicationContext.getExternalFilesDir(null), cleanPath)
 
-                // 3. Создаем подпапки автоматически
-                targetFile.parentFile?.let {
-                    if (!it.exists()) {
-                        val created = it.mkdirs()
-                        if (created) log("Создана папка: ${it.absolutePath}")
-                    }
+                // ОБНОВЛЯЕМ ПРОГРЕСС ДЛЯ ЭКРАНА
+                val progressData = workDataOf("progress_msg" to "Проверка: ${i + 1}/$totalFiles\n${targetFile.name}")
+                setProgressAsync(progressData)
+
+                // ПРОВЕРКА: Если файл есть и размер совпадает — скипаем
+                if (targetFile.exists() && targetFile.length() == expectedSize) {
+                    continue 
                 }
 
-                // 4. Скачивание файла (с защитой от сбоев)
+                // Если файла нет или размер не тот — качаем
+                targetFile.parentFile?.mkdirs()
                 downloadFile(fileUrl, targetFile)
             }
 
-            log("Все файлы успешно обработаны")
             return Result.success()
 
         } catch (e: Exception) {
-            log("КРИТИЧЕСКАЯ ОШИБКА ОБНОВЛЕНИЯ: ${e.stackTraceToString()}")
+            log("Ошибка: ${e.message}")
             return Result.failure()
         }
     }
 
     private fun downloadFile(url: String, destination: File) {
-        // Можно добавить проверку: если файл существует и размер совпадает - не качать
-        // Но по вашему запросу "не упрощать" — скачиваем/перезаписываем
-        
-        log("Загрузка: $url")
         URL(url).openStream().use { input ->
             FileOutputStream(destination).use { output ->
                 input.copyTo(output)
             }
         }
-        log("Сохранен: ${destination.name}")
     }
 
     private fun log(message: String) {
         val logFile = File(applicationContext.getExternalFilesDir(null), "flyt_log.txt")
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        logFile.appendText("[$timestamp] [Worker] $message\n")
+        logFile.appendText("[${System.currentTimeMillis()}] $message\n")
     }
 }
