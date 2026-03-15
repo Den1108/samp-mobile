@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -35,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         // Инициализируем UI
         val playButton = findViewById<Button>(R.id.playButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
-        statusText = findViewById<TextView>(R.id.statusText) // Теперь она инициализирована сразу
+        statusText = findViewById(R.id.statusText) // Теперь она инициализирована сразу
 
         playButton.setOnClickListener {
             val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
