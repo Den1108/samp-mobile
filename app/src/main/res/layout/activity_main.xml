@@ -3,31 +3,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#121212"
+    android:background="#0A0A0A"
     android:gravity="center"
-    android:padding="20dp">
+    android:padding="24dp">
 
     <TextView
-        android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Flyt Mobile"
+        android:text="FLYT MOBILE"
         android:textColor="#FFFFFF"
-        android:textSize="24sp" />
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.05"
+        android:layout_marginBottom="40dp" />
 
     <Button
         android:id="@+id/playButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:text="ИГРАТЬ"
-        android:backgroundTint="#333333" />
+        style="@style/GameButton"
+        android:backgroundTint="#007AFF"
+        android:text="ИГРАТЬ" />
 
     <Button
         android:id="@+id/settingsButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="НАСТРОЙКИ"
-        android:backgroundTint="#222222" />
+        style="@style/GameButton"
+        android:text="НАСТРОЙКИ" />
 </LinearLayout>
