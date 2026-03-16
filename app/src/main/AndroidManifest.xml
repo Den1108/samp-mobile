@@ -9,6 +9,7 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:label="Flyt Mobile"
+        android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
         android:preserveLegacyExternalStorage="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
