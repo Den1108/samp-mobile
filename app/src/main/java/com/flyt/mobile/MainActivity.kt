@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val playButton = findViewById<Button>(R.id.playButton)
+        val settingsButton = findViewById<Button>(R.id.settingsButton)
         
         playButton.setOnClickListener {
             if (areAllFilesDownloaded()) {
