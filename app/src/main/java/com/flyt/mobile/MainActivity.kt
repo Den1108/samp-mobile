@@ -28,6 +28,11 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Сначала скачайте игровые файлы!", Toast.LENGTH_SHORT).show()
             }
         }
+
+        settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun checkCache(path: String): Boolean = File(path).exists()

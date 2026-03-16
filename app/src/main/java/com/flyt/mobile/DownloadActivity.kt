@@ -7,6 +7,14 @@ import androidx.work.*
 import android.widget.Toast
 
 class DownloadActivity : AppCompatActivity() {
+    private fun formatSize(bytes: Long): String {
+        return when {
+            bytes < 1024 -> "$bytes B"
+            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+            else -> String.format("%.2f MB", bytes.toDouble() / (1024 * 1024))
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_download)
@@ -53,7 +61,7 @@ class DownloadActivity : AppCompatActivity() {
                 statusText.text = msg
                 progressBar.max = 100
                 progressBar.progress = ((current * 100) / total).toInt()
-                progressDetail.text = "${current / 1024} KB / ${total / 1024} KB"
+                progressDetail.text = "${formatSize(current)} / ${formatSize(total)}"
 
                 if (info.state == WorkInfo.State.SUCCEEDED) {
                     Toast.makeText(this, "Готово!", Toast.LENGTH_SHORT).show()
