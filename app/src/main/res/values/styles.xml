@@ -5,14 +5,13 @@
         <item name="android:statusBarColor">#0A0A0A</item>
     </style>
 
-    <style name="GameButton">
+    <style name="GameButton" parent="Widget.AppCompat.Button">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">55dp</item>
         <item name="android:layout_marginTop">12dp</item>
-        <item name="android:backgroundTint">#2D2D2D</item>
+        <item name="android:background">@drawable/button_background</item>
         <item name="android:textColor">#E0E0E0</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:cornerRadius">8dp</item>
     </style>
 </resources>
