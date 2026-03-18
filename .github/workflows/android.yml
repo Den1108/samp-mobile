@@ -1,4 +1,4 @@
-name: Android Build
+name: Android Build Release
 
 on:
   push:
@@ -19,18 +19,21 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+    # Кэширование Gradle ускорит сборку в следующий раз
+    - name: Setup Gradle Cache
+      uses: gradle/actions/setup-gradle@v3
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+    # Меняем assembleDebug на assembleRelease
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
 
-    # ВОТ ЭТА ЧАСТЬ СОХРАНЯЕТ ТВОЙ APK:
-    - name: Upload APK
+    # Сохраняем именно Release версию
+    - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: app-release-apk
+        # Путь к релизному APK (проверь, чтобы имя файла совпадало с твоим проектом)
+        path: app/build/outputs/apk/release/*.apk
