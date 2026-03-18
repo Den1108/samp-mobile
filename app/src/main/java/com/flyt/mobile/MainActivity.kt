@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import java.net.URL
 import org.json.JSONObject
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,44 +18,66 @@ class MainActivity : AppCompatActivity() {
 
         val playButton = findViewById<Button>(R.id.playButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
-        
+
         playButton.setOnClickListener {
-            if (areAllFilesDownloaded()) {
-                val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE).getString("nickname", "Player") ?: "Player"
-                val gtaSaSetPath = "${getExternalFilesDir(null)?.absolutePath}/files/gta_sa.set"
-                launchGame(nickname, gtaSaSetPath)
-            } else {
-                // Если файлов нет — принудительно открываем экран загрузки
-                startActivity(Intent(this, DownloadActivity::class.java))
-                Toast.makeText(this, "Сначала скачайте игровые файлы!", Toast.LENGTH_SHORT).show()
+            // Запускаем проверку в отдельном потоке, чтобы не вешать экран
+            thread {
+                val downloaded = areAllFilesDownloaded()
+                
+                runOnUiThread {
+                    if (downloaded) {
+                        val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
+                            .getString("nickname", "Player") ?: "Player"
+                        
+                        // Путь к конфигу игры
+                        val gtaSaSetPath = File(getExternalFilesDir(null), "files/gta_sa.set").absolutePath
+                        
+                        Toast.makeText(this, "Запуск игры...", Toast.LENGTH_SHORT).show()
+                        launchGame(nickname, gtaSaSetPath)
+                    } else {
+                        startActivity(Intent(this, DownloadActivity::class.java))
+                        Toast.makeText(this, "Нужно обновить файлы", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
 
         settingsButton.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
-    private fun checkCache(path: String): Boolean = File(path).exists()
+    // Эта функция теперь проверяет файлы более внимательно
+    private fun areAllFilesDownloaded(): Boolean {
+        return try {
+            val url = URL("https://raw.githubusercontent.com/Den1108/samp-mobile-cache/refs/heads/main/distribution.json")
+            val jsonContent = url.readText()
+            val cacheArray = JSONObject(jsonContent).getJSONArray("cache")
+
+            for (i in 0 until cacheArray.length()) {
+                val fileObj = cacheArray.getJSONObject(i)
+                val rawPath = fileObj.getString("name").replace("\\", "/")
+                
+                // ВАЖНО: убедитесь, что путь совпадает с тем, куда качает Worker
+                val targetFile = File(getExternalFilesDir(null), rawPath)
+                val expectedSize = fileObj.getJSONArray("bytes").getLong(0)
+
+                if (!targetFile.exists()) {
+                    println("ФАЙЛ ОТСУТСТВУЕТ: ${targetFile.absolutePath}")
+                    return false
+                }
+                
+                if (targetFile.length() != expectedSize) {
+                    println("РАЗМЕР НЕ СОВПАДАЕТ: ${targetFile.name} (Есть: ${targetFile.length()}, Надо: $expectedSize)")
+                    return false
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 
     external fun launchGame(nickname: String, path: String): String
-
-    private fun areAllFilesDownloaded(): Boolean {
-        val jsonContent = try { URL("https://raw.githubusercontent.com/Den1108/samp-mobile-cache/refs/heads/main/distribution.json").readText() } catch (e: Exception) { return false }
-        val cacheArray = JSONObject(jsonContent).getJSONArray("cache")
-
-        for (i in 0 until cacheArray.length()) {
-            val fileObj = cacheArray.getJSONObject(i)
-            val path = fileObj.getString("name").replace("\\", "/")
-            val targetFile = File(getExternalFilesDir(null), path)
-            val expectedSize = fileObj.getJSONArray("bytes").getLong(0)
-        
-            // Если хоть одного файла нет или размер не совпадает — возвращаем false
-            if (!targetFile.exists() || targetFile.length() != expectedSize) {
-                return false
-            }
-        }
-        return true
-    }
 }
