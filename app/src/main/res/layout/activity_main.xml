@@ -7,24 +7,118 @@
     android:gravity="center"
     android:padding="24dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/mainLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="FLYT MOBILE"
-        android:textColor="#FFFFFF"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.05"
-        android:layout_marginBottom="40dp" />
+        android:orientation="vertical"
+        android:gravity="center">
 
-    <Button
-        android:id="@+id/playButton"
-        style="@style/GameButton"
-        android:backgroundTint="#007AFF"
-        android:text="ИГРАТЬ" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FLYT MOBILE"
+            android:textColor="#FFFFFF"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="40dp" />
 
-    <Button
-        android:id="@+id/settingsButton"
-        style="@style/GameButton"
-        android:text="НАСТРОЙКИ" />
+        <Button
+            android:id="@+id/playButton"
+            style="@style/GameButton"
+            android:backgroundTint="#007AFF"
+            android:text="ИГРАТЬ" />
+
+        <Button
+            android:id="@+id/settingsButton"
+            style="@style/GameButton"
+            android:text="НАСТРОЙКИ" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/updateLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Доступна новая версия лаунчера"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:gravity="center"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Нажмите загрузить, чтобы подтвердить загрузку лаунчера."
+            android:textColor="#888888"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:gravity="center"/>
+
+        <Button
+            android:id="@+id/btnDownloadUpdate"
+            style="@style/GameButton"
+            android:backgroundTint="#007AFF"
+            android:layout_marginTop="24dp"
+            android:text="ЗАГРУЗИТЬ" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/downloadLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvUpdateStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:text="Загрузка обновления..."
+            android:layout_marginBottom="16dp" />
+
+        <ProgressBar
+            android:id="@+id/updateProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginBottom="8dp"
+            android:progressDrawable="@drawable/custom_progress"
+            android:indeterminate="false" />
+
+        <TextView
+            android:id="@+id/tvUpdateProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:text="0% (0 MB / 0 MB)" />
+
+        <TextView
+            android:id="@+id/tvInstallHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Нажмите обновить, чтобы подтвердить обновление лаунчера."
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnConfirmInstall"
+            style="@style/GameButton"
+            android:backgroundTint="#28A745"
+            android:layout_marginTop="12dp"
+            android:text="ОБНОВИТЬ"
+            android:visibility="gone" />
+    </LinearLayout>
+
 </LinearLayout>
