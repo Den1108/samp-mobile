@@ -1,16 +1,24 @@
 package com.flyt.mobile
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import java.io.File
 import java.net.URL
-import org.json.JSONObject
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
+
+    // ВЕРСИЯ ЭТОГО APK (меняй при каждом обновлении приложения)
+    private val CURRENT_APP_VERSION = 1.0
+    
+    // Ссылки для обновления самого Лаунчера (APK)
+    private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
+    private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,27 +27,13 @@ class MainActivity : AppCompatActivity() {
         val playButton = findViewById<Button>(R.id.playButton)
         val settingsButton = findViewById<Button>(R.id.settingsButton)
 
+        // 1. При запуске проверяем наличие обновлений самого APK
+        checkAppUpdate()
+
         playButton.setOnClickListener {
-            // Запускаем проверку в отдельном потоке, чтобы не вешать экран
-            thread {
-                val downloaded = areAllFilesDownloaded()
-                
-                runOnUiThread {
-                    if (downloaded) {
-                        val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
-                            .getString("nickname", "Player") ?: "Player"
-                        
-                        // Путь к конфигу игры
-                        val gtaSaSetPath = File(getExternalFilesDir(null), "files/gta_sa.set").absolutePath
-                        
-                        Toast.makeText(this, "Запуск игры...", Toast.LENGTH_SHORT).show()
-                        launchGame(nickname, gtaSaSetPath)
-                    } else {
-                        startActivity(Intent(this, DownloadActivity::class.java))
-                        Toast.makeText(this, "Нужно обновить файлы", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
+            // Теперь просто переходим в DownloadActivity. 
+            // UpdateWorker внутри сам поймет: качать всё или файлы уже на месте.
+            startActivity(Intent(this, DownloadActivity::class.java))
         }
 
         settingsButton.setOnClickListener {
@@ -47,36 +41,53 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Эта функция теперь проверяет файлы более внимательно
-    private fun areAllFilesDownloaded(): Boolean {
-        return try {
-            val url = URL("https://raw.githubusercontent.com/Den1108/samp-mobile-cache/refs/heads/main/distribution.json")
-            val jsonContent = url.readText()
-            val cacheArray = JSONObject(jsonContent).getJSONArray("cache")
-
-            for (i in 0 until cacheArray.length()) {
-                val fileObj = cacheArray.getJSONObject(i)
-                val rawPath = fileObj.getString("name").replace("\\", "/")
-                
-                // ВАЖНО: убедитесь, что путь совпадает с тем, куда качает Worker
-                val targetFile = File(getExternalFilesDir(null), rawPath)
-                val expectedSize = fileObj.getJSONArray("bytes").getLong(0)
-
-                if (!targetFile.exists()) {
-                    println("ФАЙЛ ОТСУТСТВУЕТ: ${targetFile.absolutePath}")
-                    return false
+    private fun checkAppUpdate() {
+        thread {
+            try {
+                val remoteVersion = URL(APP_VERSION_URL).readText().trim().toDouble()
+                if (remoteVersion > CURRENT_APP_VERSION) {
+                    runOnUiThread {
+                        Toast.makeText(this, "Обновление лаунчера...", Toast.LENGTH_LONG).show()
+                        downloadAndInstallApk()
+                    }
                 }
-                
-                if (targetFile.length() != expectedSize) {
-                    println("РАЗМЕР НЕ СОВПАДАЕТ: ${targetFile.name} (Есть: ${targetFile.length()}, Надо: $expectedSize)")
-                    return false
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
         }
+    }
+
+    private fun downloadAndInstallApk() {
+        thread {
+            try {
+                val apkFile = File(getExternalFilesDir(null), "update.apk")
+                URL(APK_URL).openStream().use { input ->
+                    apkFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                runOnUiThread { installApk(apkFile) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun installApk(file: File) {
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
+    // Метод для запуска игры (вызывается обычно из DownloadActivity после успеха)
+    fun startLaunchSequence() {
+        val nickname = getSharedPreferences("FlytPrefs", MODE_PRIVATE).getString("nickname", "Player") ?: "Player"
+        val gtaSaSetPath = File(getExternalFilesDir(null), "files/gta_sa.set").absolutePath
+        launchGame(nickname, gtaSaSetPath)
     }
 
     external fun launchGame(nickname: String, path: String): String
