@@ -15,7 +15,7 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity() {
 
     // ВЕРСИЯ ЭТОГО APK
-    private val CURRENT_APP_VERSION = 1.0
+    private val CURRENT_APP_VERSION = beta-1.1
     
     private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
     private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
