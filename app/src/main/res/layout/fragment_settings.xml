@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0A0A0A"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="НАСТРОЙКИ"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Игровой никнейм:"
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/editNickname"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:hint="Player_Name"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#444444"
+        android:background="@drawable/button_background"
+        android:padding="12dp"
+        android:inputType="textPersonName" />
+
+    <Button
+        android:id="@+id/saveButton"
+        style="@style/GameButton"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="#007AFF"
+        android:text="СОХРАНИТЬ" />
+
+</LinearLayout>
