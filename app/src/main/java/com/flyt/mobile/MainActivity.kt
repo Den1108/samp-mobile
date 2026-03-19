@@ -15,7 +15,7 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity() {
 
     // ВЕРСИЯ ЭТОГО APK
-    private val CURRENT_APP_VERSION = 1.2
+    private val CURRENT_APP_VERSION = 1.3
     
     private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
     private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
@@ -54,7 +54,16 @@ class MainActivity : AppCompatActivity() {
         checkAppUpdate()
 
         playButton.setOnClickListener {
-            startActivity(Intent(this, DownloadActivity::class.java))
+            val prefs = getSharedPreferences("FlytPrefs", MODE_PRIVATE)
+            val nickname = prefs.getString("nickname", "")
+
+            if (nickname.isNullOrEmpty() || nickname == "Player") {
+                Toast.makeText(this, "Сначала установите никнейм в настройках!", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this, SettingsActivity::class.java))
+            } else {
+                // Если ник есть, идем к загрузке кеша/запуску
+                startActivity(Intent(this, DownloadActivity::class.java))
+            }
         }
 
         btnDownloadUpdate.setOnClickListener {
@@ -67,6 +76,10 @@ class MainActivity : AppCompatActivity() {
             if (apkFile.exists()) {
                 installApk(apkFile)
             }
+        }
+
+        settingsButton.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
