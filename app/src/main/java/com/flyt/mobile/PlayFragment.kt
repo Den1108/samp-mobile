@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 
 class PlayFragment : Fragment(R.layout.fragment_play) {
 
-    private val CURRENT_APP_VERSION = 1.5
+    private val CURRENT_APP_VERSION = 1.6
     private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
     private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
 
@@ -23,7 +23,7 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
     private lateinit var downloadLayout: LinearLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var tvProgress: TextView
-    private lateinit var tvStatus: TextView // Мы используем это имя
+    private lateinit var tvStatus: TextView
     private lateinit var btnConfirmInstall: Button
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -32,16 +32,13 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
         mainLayout = view.findViewById(R.id.mainLayout)
         updateLayout = view.findViewById(R.id.updateLayout)
         downloadLayout = view.findViewById(R.id.downloadLayout)
-        
         progressBar = view.findViewById(R.id.updateProgressBar)
         tvProgress = view.findViewById(R.id.tvUpdateProgress)
-        // ВАЖНО: Привязываем tvStatus к ID из XML. 
-        // Если в fragment_play.xml нет TextView с id tvUpdateStatus, создай его или используй существующий
         tvStatus = view.findViewById(R.id.tvUpdateProgress) 
+        btnConfirmInstall = view.findViewById(R.id.btnConfirmInstall)
 
         val playButton = view.findViewById<Button>(R.id.playButton)
         val btnDownloadUpdate = view.findViewById<Button>(R.id.btnDownloadUpdate)
-        btnConfirmInstall = view.findViewById(R.id.btnConfirmInstall)
 
         updateLayout.visibility = View.GONE
         downloadLayout.visibility = View.GONE
@@ -53,9 +50,18 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
             val nickname = prefs.getString("nickname", "")
 
             if (nickname.isNullOrEmpty() || nickname == "Player") {
-                Toast.makeText(requireContext(), "Сначала установите никнейм в настройках!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Сначала установите ник в настройках!", Toast.LENGTH_SHORT).show()
             } else {
-                startActivity(Intent(requireContext(), DownloadActivity::class.java))
+                val sampDir = File(requireContext().getExternalFilesDir(null), "SAMP")
+                
+                // Проверяем, скачан ли кэш (папка SAMP)
+                if (sampDir.exists()) {
+                    launchGame()
+                } else {
+                    // Если кэша нет, открываем экран загрузки (DownloadActivity)
+                    val intent = Intent(requireContext(), DownloadActivity::class.java)
+                    startActivity(intent)
+                }
             }
         }
 
@@ -66,9 +72,24 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
         
         btnConfirmInstall.setOnClickListener {
             val apkFile = File(requireContext().getExternalFilesDir(null), "update.apk")
-            if (apkFile.exists()) {
-                installApk(apkFile)
-            }
+            if (apkFile.exists()) installApk(apkFile)
+        }
+    }
+
+    private fun launchGame() {
+        try {
+            val intent = Intent()
+            // ВАЖНО: Проверь AndroidManifest.xml того проекта, откуда брал jniLibs.
+            // Там должно быть имя главной Activity игры. Обычно это:
+            intent.setClassName(requireContext().packageName, "com.nvidia.valkyrie.VGActivity")
+            
+            // Передаем флаг, чтобы игра запустилась в новом окне
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Ошибка: Не удалось найти движок игры!", Toast.LENGTH_LONG).show()
+            e.printStackTrace()
         }
     }
 
@@ -82,26 +103,21 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                         updateLayout.visibility = View.VISIBLE
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 
     private fun showDownloadUI() {
         updateLayout.visibility = View.GONE
         downloadLayout.visibility = View.VISIBLE
-        tvStatus.text = "Загрузка обновления..." // Теперь ошибка исчезнет
+        tvStatus.text = "Загрузка обновления..."
     }
 
     private fun downloadAndInstallApk() {
         thread {
             try {
                 val apkFile = File(requireContext().getExternalFilesDir(null), "update.apk")
-                val url = URL(APK_URL)
-                val connection = url.openConnection()
-                connection.connect()
-                
+                val connection = URL(APK_URL).openConnection()
                 val fileLength = connection.contentLengthLong
                 val input = connection.getInputStream()
                 val output = FileOutputStream(apkFile)
@@ -113,15 +129,12 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                 while (input.read(data).also { count = it } != -1) {
                     total += count
                     output.write(data, 0, count)
-                    
                     val progress = ((total * 100) / fileLength).toInt()
                     activity?.runOnUiThread {
                         progressBar.progress = progress
                         tvProgress.text = "$progress% (${formatSize(total)} / ${formatSize(fileLength)})"
                     }
                 }
-
-                output.flush()
                 output.close()
                 input.close()
 
@@ -131,17 +144,12 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                     progressBar.visibility = View.INVISIBLE
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                activity?.runOnUiThread {
-                    Toast.makeText(requireContext(), "Ошибка загрузки", Toast.LENGTH_SHORT).show()
-                }
+                activity?.runOnUiThread { Toast.makeText(requireContext(), "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
             }
         }
     }
 
-    private fun formatSize(bytes: Long): String {
-        return String.format("%.2f MB", bytes.toDouble() / (1024 * 1024))
-    }
+    private fun formatSize(bytes: Long): String = String.format("%.2f MB", bytes.toDouble() / (1024 * 1024))
 
     private fun installApk(file: File) {
         val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.provider", file)

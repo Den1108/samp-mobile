@@ -25,24 +25,37 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             val nickname = editNickname.text.toString().trim()
             
             if (nickname.isNotEmpty()) {
-                // 1. Сохраняем в память лаунчера
+                // 1. Сохраняем в память лаунчера для UI
                 prefs.edit().putString("nickname", nickname).apply()
                 
-                // 2. Записываем в файл для игры
-                saveNicknameToFile(nickname)
+                // 2. Записываем полный конфиг для игрового движка
+                saveGameSettings(nickname)
                 
-                Toast.makeText(requireContext(), "Никнейм сохранен!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Настройки сохранены!", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(requireContext(), "Ник не может быть пустым", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun saveNicknameToFile(nickname: String) {
+    private fun saveGameSettings(nickname: String) {
         try {
             val sampDir = File(requireContext().getExternalFilesDir(null), "SAMP")
             if (!sampDir.exists()) sampDir.mkdirs()
-            File(sampDir, "settings.ini").writeText("[client]\nname=$nickname\n")
+
+            // Формируем содержимое settings.ini
+            val settingsContent = """
+                [client]
+                name=$nickname
+                host=192.168.31.178
+                port=7777
+                password=
+                
+                [gui]
+                FontSize=1.0
+            """.trimIndent()
+
+            File(sampDir, "settings.ini").writeText(settingsContent)
         } catch (e: Exception) {
             e.printStackTrace()
         }
