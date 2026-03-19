@@ -81,7 +81,7 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
             val intent = Intent()
             // ВАЖНО: Проверь AndroidManifest.xml того проекта, откуда брал jniLibs.
             // Там должно быть имя главной Activity игры. Обычно это:
-            intent.setClassName(requireContext().packageName, "com.nvidia.valkyrie.VGActivity")
+            intent.setClassName(requireContext().packageName, "com.flyt.mobile.MainGTA")
             
             // Передаем флаг, чтобы игра запустилась в новом окне
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
