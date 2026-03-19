@@ -1,12 +1,12 @@
-package com.touch.mobile.dark.gui;
+package com.flyt.mobile.gui;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.adapters.DialogMenuAdapter;
-import com.touch.mobile.dark.gui.models.DataDialogMenu;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.adapters.DialogMenuAdapter;
+import com.flyt.mobile.gui.models.DataDialogMenu;
+import com.flyt.mobile.gui.util.Utils;
 import com.nvidia.devtech.NvEventQueueActivity;
 
 import android.content.Context;

@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.tab;
+package com.flyt.mobile.gui.tab;
 
 import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
@@ -11,10 +11,10 @@ import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 import android.view.animation.AnimationUtils;
-import com.touch.mobile.dark.R;
+import com.flyt.mobile.R;
 import java.util.ArrayList;
 import java.util.List;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.gui.util.Utils;
 public class TabAdapter extends RecyclerView.Adapter implements Filterable {
 
     private List<PlayerData> mPlayerData;

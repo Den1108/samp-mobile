@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.models;
+package com.flyt.mobile.gui.models;
 
 public class DataDialogMenu {
     private int id;

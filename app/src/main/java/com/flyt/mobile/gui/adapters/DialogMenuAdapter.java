@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.adapters;
+package com.flyt.mobile.gui.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -6,8 +6,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.models.DataDialogMenu;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.models.DataDialogMenu;
 import java.util.List;
 
 public class DialogMenuAdapter extends RecyclerView.Adapter<DialogMenuAdapter.DialogMenuHolder> {

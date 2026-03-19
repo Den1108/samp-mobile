@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui;
+package com.flyt.mobile.gui;
 
 import android.animation.Animator;
 import android.app.Activity;
@@ -13,8 +13,8 @@ import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.Utils;
 import com.nvidia.devtech.NvEventQueueActivity;
 
 import java.io.UnsupportedEncodingException;

@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.util;
+package com.flyt.mobile.gui.util;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;

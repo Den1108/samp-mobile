@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.tab;
+package com.flyt.mobile.gui.tab;
 
 import android.app.Activity;
 import android.text.Editable;
@@ -12,9 +12,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.LinearLayoutManagerWrapper;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.LinearLayoutManagerWrapper;
+import com.flyt.mobile.gui.util.Utils;
 import com.nvidia.devtech.NvEventQueueActivity;
 import java.util.ArrayList;
 import java.util.List;

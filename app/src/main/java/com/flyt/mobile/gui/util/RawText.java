@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.util;
+package com.flyt.mobile.gui.util;
 
 public class RawText {
     private String text = "";

@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.util;
+package com.flyt.mobile.gui.util;
 
 public class Range {
     private int end = -1;

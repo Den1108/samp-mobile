@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.dialogs;
+package com.flyt.mobile.gui.dialogs;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,9 +12,9 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.nvidia.devtech.CustomEditText;
 import com.nvidia.devtech.NvEventQueueActivity;
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.CustomRecyclerView;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.CustomRecyclerView;
+import com.flyt.mobile.gui.util.Utils;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;

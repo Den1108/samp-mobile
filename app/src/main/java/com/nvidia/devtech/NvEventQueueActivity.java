@@ -52,14 +52,14 @@ import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.HudManager;
-import com.touch.mobile.dark.gui.dialogs.Dialog;
-import com.touch.mobile.dark.gui.Speedometer;
-import com.touch.mobile.dark.gui.Notification;
-import com.touch.mobile.dark.gui.Menu;
-import com.touch.mobile.dark.gui.ChooseServer;
-import com.touch.mobile.dark.gui.tab.Tab;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.HudManager;
+import com.flyt.mobile.gui.dialogs.Dialog;
+import com.flyt.mobile.gui.Speedometer;
+import com.flyt.mobile.gui.Notification;
+import com.flyt.mobile.gui.Menu;
+import com.flyt.mobile.gui.ChooseServer;
+import com.flyt.mobile.gui.tab.Tab;
 
 import java.io.FileInputStream;
 import java.io.IOException;

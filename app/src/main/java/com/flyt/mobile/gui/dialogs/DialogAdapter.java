@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui.dialogs;
+package com.flyt.mobile.gui.dialogs;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,9 +9,9 @@ import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.MaskedEditText;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.MaskedEditText;
+import com.flyt.mobile.gui.util.Utils;
 
 import java.util.ArrayList;
 

@@ -7,7 +7,7 @@ import android.view.KeyEvent;
 
 import com.wardrumstudios.utils.WarMedia;
 
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.gui.util.Utils;
 
 public class MainGTA extends WarMedia {
     public static MainGTA self = null;

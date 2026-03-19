@@ -10,7 +10,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import com.touch.mobile.dark.R;
+import com.flyt.mobile.R;
 import java.util.ArrayList;
 
 public class InputManager {

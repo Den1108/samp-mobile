@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui;
+package com.flyt.mobile.gui;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -10,8 +10,8 @@ import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.nvidia.devtech.NvEventQueueActivity;
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.Utils;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.Utils;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;

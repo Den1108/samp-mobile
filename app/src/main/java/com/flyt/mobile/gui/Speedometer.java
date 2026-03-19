@@ -1,4 +1,4 @@
-package com.touch.mobile.dark.gui;
+package com.flyt.mobile.gui;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -7,9 +7,9 @@ import android.widget.*;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.touch.mobile.dark.R;
-import com.touch.mobile.dark.gui.util.Utils;
-import com.touch.mobile.dark.gui.util.SeekArc;
+import com.flyt.mobile.R;
+import com.flyt.mobile.gui.util.Utils;
+import com.flyt.mobile.gui.util.SeekArc;
 import java.util.Formatter;
 
 public class Speedometer {
