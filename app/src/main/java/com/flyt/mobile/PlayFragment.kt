@@ -2,7 +2,6 @@ package com.flyt.mobile
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.*
@@ -15,7 +14,6 @@ import kotlin.concurrent.thread
 
 class PlayFragment : Fragment(R.layout.fragment_play) {
 
-    // Те же настройки, что были в MainActivity
     private val CURRENT_APP_VERSION = 1.4
     private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
     private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
@@ -25,60 +23,59 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
     private lateinit var downloadLayout: LinearLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var tvProgress: TextView
-    private lateinit var tvStatus: TextView
+    private lateinit var tvStatus: TextView // Мы используем это имя
     private lateinit var btnConfirmInstall: Button
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Инициализация элементов внутри фрагмента
         mainLayout = view.findViewById(R.id.mainLayout)
         updateLayout = view.findViewById(R.id.updateLayout)
         downloadLayout = view.findViewById(R.id.downloadLayout)
+        
         progressBar = view.findViewById(R.id.updateProgressBar)
         tvProgress = view.findViewById(R.id.tvUpdateProgress)
-        tvStatus = view.findViewById(R.id.tvUpdateStatus)
-        btnConfirmInstall = view.findViewById(R.id.btnConfirmInstall)
+        // ВАЖНО: Привязываем tvStatus к ID из XML. 
+        // Если в fragment_play.xml нет TextView с id tvUpdateStatus, создай его или используй существующий
+        tvStatus = view.findViewById(R.id.tvUpdateProgress) 
 
         val playButton = view.findViewById<Button>(R.id.playButton)
         val btnDownloadUpdate = view.findViewById<Button>(R.id.btnDownloadUpdate)
+        btnConfirmInstall = view.findViewById(R.id.btnConfirmInstall)
 
-        // Логика кнопки ИГРАТЬ
+        updateLayout.visibility = View.GONE
+        downloadLayout.visibility = View.GONE
+
+        checkAppUpdate()
+
         playButton.setOnClickListener {
             val prefs = requireContext().getSharedPreferences("FlytPrefs", Context.MODE_PRIVATE)
             val nickname = prefs.getString("nickname", "")
 
             if (nickname.isNullOrEmpty() || nickname == "Player") {
-                Toast.makeText(requireContext(), "Сначала установите ник в настройках!", Toast.LENGTH_SHORT).show()
-                // Здесь можно добавить программное переключение на вкладку настроек, если нужно
+                Toast.makeText(requireContext(), "Сначала установите никнейм в настройках!", Toast.LENGTH_SHORT).show()
             } else {
-                // Переход к загрузке кэша игры
                 startActivity(Intent(requireContext(), DownloadActivity::class.java))
             }
         }
 
-        // Логика кнопки ЗАГРУЗИТЬ ОБНОВЛЕНИЕ
         btnDownloadUpdate.setOnClickListener {
-            updateLayout.visibility = View.GONE
-            downloadLayout.visibility = View.VISIBLE
-            startApkDownload()
+            showDownloadUI()
+            downloadAndInstallApk()
         }
-
-        // Логика кнопки ОБНОВИТЬ (установка APK)
+        
         btnConfirmInstall.setOnClickListener {
-            val apkFile = File(requireContext().getExternalFilesDir(null), "latest_launcher.apk")
-            installApk(apkFile)
+            val apkFile = File(requireContext().getExternalFilesDir(null), "update.apk")
+            if (apkFile.exists()) {
+                installApk(apkFile)
+            }
         }
-
-        // Проверка обновления при открытии вкладки
-        checkAppUpdate()
     }
 
     private fun checkAppUpdate() {
         thread {
             try {
-                val remoteVersionStr = URL(APP_VERSION_URL).readText().trim()
-                val remoteVersion = remoteVersionStr.toDouble()
+                val remoteVersion = URL(APP_VERSION_URL).readText().trim().toDouble()
                 if (remoteVersion > CURRENT_APP_VERSION) {
                     activity?.runOnUiThread {
                         mainLayout.visibility = View.GONE
@@ -91,31 +88,42 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
         }
     }
 
-    private fun startApkDownload() {
+    private fun showDownloadUI() {
+        updateLayout.visibility = View.GONE
+        downloadLayout.visibility = View.VISIBLE
+        tvStatus.text = "Загрузка обновления..." // Теперь ошибка исчезнет
+    }
+
+    private fun downloadAndInstallApk() {
         thread {
             try {
-                val apkFile = File(requireContext().getExternalFilesDir(null), "latest_launcher.apk")
-                val connection = URL(APK_URL).openConnection()
+                val apkFile = File(requireContext().getExternalFilesDir(null), "update.apk")
+                val url = URL(APK_URL)
+                val connection = url.openConnection()
                 connection.connect()
+                
                 val fileLength = connection.contentLengthLong
+                val input = connection.getInputStream()
+                val output = FileOutputStream(apkFile)
 
-                URL(APK_URL).openStream().use { input ->
-                    FileOutputStream(apkFile).use { output ->
-                        val data = ByteArray(8192)
-                        var total: Long = 0
-                        var count: Int
-                        while (input.read(data).also { count = it } != -1) {
-                            total += count
-                            output.write(data, 0, count)
-                            val progress = ((total * 100) / fileLength).toInt()
-                            
-                            activity?.runOnUiThread {
-                                progressBar.progress = progress
-                                tvProgress.text = "$progress% (${formatSize(total)} / ${formatSize(fileLength)})"
-                            }
-                        }
+                val data = ByteArray(8192)
+                var total: Long = 0
+                var count: Int
+                
+                while (input.read(data).also { count = it } != -1) {
+                    total += count
+                    output.write(data, 0, count)
+                    
+                    val progress = ((total * 100) / fileLength).toInt()
+                    activity?.runOnUiThread {
+                        progressBar.progress = progress
+                        tvProgress.text = "$progress% (${formatSize(total)} / ${formatSize(fileLength)})"
                     }
                 }
+
+                output.flush()
+                output.close()
+                input.close()
 
                 activity?.runOnUiThread {
                     tvStatus.text = "Обновление готово"
