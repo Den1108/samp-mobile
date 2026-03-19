@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 
 class PlayFragment : Fragment(R.layout.fragment_play) {
 
-    private val CURRENT_APP_VERSION = 1.6
+    private val CURRENT_APP_VERSION = 1.7
     private val APP_VERSION_URL = "http://192.168.31.178:3000/app_version.txt"
     private val APK_URL = "http://192.168.31.178:3000/latest_launcher.apk"
 
