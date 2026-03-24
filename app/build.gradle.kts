@@ -12,8 +12,8 @@ android {
         minSdk = 24
         targetSdk = 34
         // Увеличивай эти значения при каждом обновлении APK
-        versionCode = 8
-        versionName = "1.7"
+        versionCode = 9
+        versionName = "1.8"
 
         externalNativeBuild {
             cmake {
