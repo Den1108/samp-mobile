@@ -19,21 +19,32 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    # Кэширование Gradle ускорит сборку в следующий раз
     - name: Setup Gradle Cache
       uses: gradle/actions/setup-gradle@v3
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # Меняем assembleDebug на assembleRelease
+    # Создаём local.properties с секретами из GitHub Secrets
+    # Чтобы это работало, добавь в Settings → Secrets → Actions:
+    #   KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+    # А сам .jks файл закодируй в base64 и добавь как секрет KEYSTORE_BASE64
+    - name: Create local.properties from secrets
+      run: |
+        echo "KEYSTORE_FILE=FlytMobile-release-key.jks" >> local.properties
+        echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
+        echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> local.properties
+        echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> local.properties
+
+    # Декодируем keystore из base64 секрета в файл
+    - name: Decode keystore
+      run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/FlytMobile-release-key.jks
+
     - name: Build Release APK
       run: ./gradlew assembleRelease
 
-    # Сохраняем именно Release версию
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
         name: app-release-apk
-        # Путь к релизному APK (проверь, чтобы имя файла совпадало с твоим проектом)
         path: app/build/outputs/apk/release/*.apk

@@ -1,6 +1,14 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Читаем local.properties (файл НЕ коммитится в git — добавь в .gitignore)
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
 }
 
 android {
@@ -11,7 +19,6 @@ android {
         applicationId = "com.flyt.mobile"
         minSdk = 24
         targetSdk = 34
-        // Увеличивай эти значения при каждом обновлении APK
         versionCode = 9
         versionName = "1.8"
 
@@ -23,30 +30,25 @@ android {
         }
     }
 
-    // 1. Настройка подписи (вставь свои пароли из терминала)
     signingConfigs {
         create("release") {
-            storeFile = file("FlytMobile-release-key.jks")
-            storePassword = "denjik20"
-            keyAlias = "FlytMobile-release-key"
-            keyPassword = "denjik20"
+            storeFile = file(localProps.getProperty("KEYSTORE_FILE", "FlytMobile-release-key.jks"))
+            storePassword = localProps.getProperty("KEYSTORE_PASSWORD", "")
+            keyAlias = localProps.getProperty("KEY_ALIAS", "FlytMobile-release-key")
+            keyPassword = localProps.getProperty("KEY_PASSWORD", "")
         }
     }
 
     buildTypes {
         getByName("release") {
-            // 2. Привязываем подпись к релизу
             signingConfig = signingConfigs.getByName("release")
-            
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
-        
         getByName("debug") {
-            // Можно использовать ту же подпись для дебага, если нужно тестировать обновление
             signingConfig = signingConfigs.getByName("release")
         }
     }

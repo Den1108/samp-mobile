@@ -1,5 +1,24 @@
-# Ignore Gradle project-specific cache directory
-.gradle
+# Gradle
+.gradle/
+build/
+*.iml
 
-# Ignore Gradle build output directory
-build
+# Android Studio / IDEA
+.idea/
+*.iws
+*.ipr
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Секреты — НИКОГДА не коммить!
+local.properties
+*.jks
+*.keystore
+
+# APK и AAB
+*.apk
+*.aab
+
+# Логи
+*.log

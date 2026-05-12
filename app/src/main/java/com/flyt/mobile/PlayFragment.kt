@@ -1,10 +1,15 @@
 package com.flyt.mobile
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import java.io.File
@@ -25,22 +30,36 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
     private lateinit var tvProgress: TextView
     private lateinit var tvStatus: TextView
     private lateinit var btnConfirmInstall: Button
+    private lateinit var playButton: Button
+
+    // Запрос разрешения на хранилище (нужно только на Android 9 и ниже)
+    private val storagePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            proceedAfterPermission()
+        } else {
+            Toast.makeText(requireContext(),
+                "Без разрешения на хранилище невозможно загрузить кэш игры",
+                Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        mainLayout = view.findViewById(R.id.mainLayout)
-        updateLayout = view.findViewById(R.id.updateLayout)
-        downloadLayout = view.findViewById(R.id.downloadLayout)
-        progressBar = view.findViewById(R.id.updateProgressBar)
-        tvProgress = view.findViewById(R.id.tvUpdateProgress)
-        tvStatus = view.findViewById(R.id.tvUpdateProgress) 
+        mainLayout      = view.findViewById(R.id.mainLayout)
+        updateLayout    = view.findViewById(R.id.updateLayout)
+        downloadLayout  = view.findViewById(R.id.downloadLayout)
+        progressBar     = view.findViewById(R.id.updateProgressBar)
+        tvProgress      = view.findViewById(R.id.tvUpdateProgress)
+        tvStatus        = view.findViewById(R.id.tvUpdateProgress)
         btnConfirmInstall = view.findViewById(R.id.btnConfirmInstall)
+        playButton      = view.findViewById(R.id.playButton)
 
-        val playButton = view.findViewById<Button>(R.id.playButton)
         val btnDownloadUpdate = view.findViewById<Button>(R.id.btnDownloadUpdate)
 
-        updateLayout.visibility = View.GONE
+        updateLayout.visibility   = View.GONE
         downloadLayout.visibility = View.GONE
 
         checkAppUpdate()
@@ -50,46 +69,67 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
             val nickname = prefs.getString("nickname", "")
 
             if (nickname.isNullOrEmpty() || nickname == "Player") {
-                Toast.makeText(requireContext(), "Сначала установите ник в настройках!", Toast.LENGTH_SHORT).show()
-            } else {
-                val sampDir = File(requireContext().getExternalFilesDir(null), "SAMP")
-                
-                // Проверяем, скачан ли кэш (папка SAMP)
-                if (sampDir.exists()) {
-                    launchGame()
-                } else {
-                    // Если кэша нет, открываем экран загрузки (DownloadActivity)
-                    val intent = Intent(requireContext(), DownloadActivity::class.java)
-                    startActivity(intent)
+                Toast.makeText(requireContext(),
+                    "Сначала установите ник в настройках!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // На Android 9 и ниже запрашиваем разрешение перед работой с файлами
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                val permission = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                if (ContextCompat.checkSelfPermission(requireContext(), permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    storagePermissionLauncher.launch(permission)
+                    return@setOnClickListener
                 }
             }
+
+            proceedAfterPermission()
         }
 
         btnDownloadUpdate.setOnClickListener {
             showDownloadUI()
             downloadAndInstallApk()
         }
-        
+
         btnConfirmInstall.setOnClickListener {
             val apkFile = File(requireContext().getExternalFilesDir(null), "update.apk")
             if (apkFile.exists()) installApk(apkFile)
         }
     }
 
-    private fun launchGame() {
-        try {
-            val intent = Intent()
-            // ВАЖНО: Проверь AndroidManifest.xml того проекта, откуда брал jniLibs.
-            // Там должно быть имя главной Activity игры. Обычно это:
-            intent.setClassName(requireContext().packageName, "com.flyt.mobile.MainGTA")
-            
-            // Передаем флаг, чтобы игра запустилась в новом окне
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            
+    /** Вызывается после того, как разрешения получены (или не нужны на Android 10+) */
+    private fun proceedAfterPermission() {
+        // getExternalFilesDir() не требует разрешений на Android 10+
+        val sampDir = File(requireContext().getExternalFilesDir(null), "SAMP")
+
+        if (sampDir.exists()) {
+            launchGame()
+        } else {
+            val intent = Intent(requireContext(), DownloadActivity::class.java)
             startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Ошибка: Не удалось найти движок игры!", Toast.LENGTH_LONG).show()
-            e.printStackTrace()
+        }
+    }
+
+    private fun launchGame() {
+        // Проверяем, зарегистрирован ли Activity игрового движка вообще
+        val intent = Intent().apply {
+            setClassName(requireContext().packageName, "${requireContext().packageName}.MainGTA")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        val canResolve = requireContext().packageManager
+            .resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null
+
+        if (canResolve) {
+            startActivity(intent)
+        } else {
+            // Движок не подключён — показываем понятное сообщение вместо краша
+            Toast.makeText(
+                requireContext(),
+                "Игровой движок не найден. Убедись, что jniLibs добавлены в проект.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -99,16 +139,18 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                 val remoteVersion = URL(APP_VERSION_URL).readText().trim().toDouble()
                 if (remoteVersion > CURRENT_APP_VERSION) {
                     activity?.runOnUiThread {
-                        mainLayout.visibility = View.GONE
+                        mainLayout.visibility   = View.GONE
                         updateLayout.visibility = View.VISIBLE
                     }
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     private fun showDownloadUI() {
-        updateLayout.visibility = View.GONE
+        updateLayout.visibility   = View.GONE
         downloadLayout.visibility = View.VISIBLE
         tvStatus.text = "Загрузка обновления..."
     }
@@ -125,11 +167,11 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                 val data = ByteArray(8192)
                 var total: Long = 0
                 var count: Int
-                
+
                 while (input.read(data).also { count = it } != -1) {
                     total += count
                     output.write(data, 0, count)
-                    val progress = ((total * 100) / fileLength).toInt()
+                    val progress = if (fileLength > 0) ((total * 100) / fileLength).toInt() else 0
                     activity?.runOnUiThread {
                         progressBar.progress = progress
                         tvProgress.text = "$progress% (${formatSize(total)} / ${formatSize(fileLength)})"
@@ -144,15 +186,22 @@ class PlayFragment : Fragment(R.layout.fragment_play) {
                     progressBar.visibility = View.INVISIBLE
                 }
             } catch (e: Exception) {
-                activity?.runOnUiThread { Toast.makeText(requireContext(), "Ошибка загрузки", Toast.LENGTH_SHORT).show() }
+                activity?.runOnUiThread {
+                    Toast.makeText(requireContext(), "Ошибка загрузки APK", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
-    private fun formatSize(bytes: Long): String = String.format("%.2f MB", bytes.toDouble() / (1024 * 1024))
+    private fun formatSize(bytes: Long): String =
+        String.format("%.2f MB", bytes.toDouble() / (1024 * 1024))
 
     private fun installApk(file: File) {
-        val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.provider", file)
+        val uri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.provider",
+            file
+        )
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
